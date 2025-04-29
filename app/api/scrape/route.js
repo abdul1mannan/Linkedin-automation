@@ -213,13 +213,16 @@ async function loginToLinkedIn(page) {
   }
 
   try {
-    if (page.url() !== 'https://www.linkedin.com/in/') {
-      return true;
-    }
-    await page.goto('https://www.linkedin.com/login', {
-      waitUntil: 'networkidle2',
+
+    await page.goto('https://www.linkedin.com/feed', {
       timeout: 60000
     });
+
+    const currentUrl = page.url();
+    if (currentUrl.includes('linkedin.com/feed')) {
+      console.log("Already on LinkedIn feed, skipping login");
+      return true;
+    }
 
 
     const signInOtherAccountSelector = 'a.btn__tertiary--medium[data-cie-control-urn="sign_in_with_another_account"]';
@@ -232,7 +235,6 @@ async function loginToLinkedIn(page) {
       await page.click(signInOtherAccountSelector);
     }
 
-
     await page.waitForSelector('#username', { visible: true, timeout: 10000 });
     await page.waitForSelector('#password', { visible: true, timeout: 10000 });
 
@@ -242,14 +244,13 @@ async function loginToLinkedIn(page) {
     await humanTyping(page, '#password', password);
     await randomDelay(1000, 2000);
 
-
     const loginButtonSelector = 'button[type="submit"]';
     await page.waitForSelector(loginButtonSelector, { visible: true, timeout: 10000 });
 
     await randomDelay(300, 800);
     await Promise.all([
       page.click(loginButtonSelector),
-
+      page.waitForNavigation({ timeout: 60000 })
     ]);
 
     console.log("Login successful");

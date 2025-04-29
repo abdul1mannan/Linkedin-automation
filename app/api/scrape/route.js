@@ -8,8 +8,6 @@ import OpenAI from "openai";
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import chromium from '@sparticuz/chromium';
-import puppeteerCore from "puppeteer-core";
 
 const stealth = StealthPlugin();
 stealth.enabledEvasions.delete("chrome.runtime");
@@ -106,11 +104,18 @@ async function launchBrowser() {
 
   const resolution = commonResolutions[Math.floor(Math.random() * commonResolutions.length)];
 
-  const executablePath = await chromium.executablePath();
 
-  return await puppeteerCore.launch({
+  const userDataDir = path.join(os.tmpdir(), 'puppeteer_user_data_dir');
+
+  try {
+    await fs.mkdir(userDataDir, { recursive: true });
+  } catch (error) {
+    console.error('Error creating user data directory:', error);
+  }
+
+  return await puppeteer.launch({
+    headless: false,
     args: [
-      ...chromium.args,
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
@@ -121,10 +126,10 @@ async function launchBrowser() {
       '--disable-infobars',
       '--disable-blink-features=AutomationControlled',
     ],
+    userDataDir: userDataDir,
     defaultViewport: resolution,
-    executablePath: executablePath,
-    headless: chromium.headless,
     ignoreHTTPSErrors: true,
+    ignoreDefaultArgs: ['--enable-automation'],
   });
 }
 

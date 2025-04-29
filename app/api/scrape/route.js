@@ -5,6 +5,9 @@ import BlockResourcesPlugin from "puppeteer-extra-plugin-block-resources";
 import { createCursor } from "ghost-cursor";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 
 const stealth = StealthPlugin();
 stealth.enabledEvasions.delete("chrome.runtime");
@@ -13,6 +16,7 @@ puppeteer.use(stealth);
 
 
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
+
 // puppeteer.use(
 //   BlockResourcesPlugin({
 //     blockedTypes: new Set(["image", "stylesheet", "font"]),
@@ -21,13 +25,11 @@ puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-
 async function randomDelay(min = 1000, max = 5000) {
   const delay = Math.floor(Math.random() * (max - min) + min);
   await new Promise(resolve => setTimeout(resolve, delay));
   return delay;
 }
-
 
 async function naturalScroll(page, targetPosition, options = {}) {
   const {
@@ -70,7 +72,6 @@ async function naturalScroll(page, targetPosition, options = {}) {
   await randomDelay(300, 800);
 }
 
-
 async function humanTyping(page, selector, text) {
   await page.focus(selector);
 
@@ -93,6 +94,45 @@ async function humanTyping(page, selector, text) {
   await randomDelay(300, 1200);
 }
 
+async function launchBrowser() {
+  const commonResolutions = [
+    { width: 1920, height: 1080 },
+    { width: 1366, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 1536, height: 864 }
+  ];
+
+  const resolution = commonResolutions[Math.floor(Math.random() * commonResolutions.length)];
+
+
+  const userDataDir = path.join(os.tmpdir(), 'puppeteer_user_data_dir');
+
+  try {
+    await fs.mkdir(userDataDir, { recursive: true });
+  } catch (error) {
+    console.error('Error creating user data directory:', error);
+  }
+
+  return await puppeteer.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--window-size=' + resolution.width + ',' + resolution.height,
+      '--lang=en-US,en',
+      '--disable-infobars',
+      '--disable-blink-features=AutomationControlled',
+    ],
+    userDataDir: userDataDir,
+    defaultViewport: resolution,
+    ignoreHTTPSErrors: true,
+    ignoreDefaultArgs: ['--enable-automation'],
+  });
+}
+
 async function connectToBrowser() {
 
   const commonResolutions = [
@@ -102,9 +142,16 @@ async function connectToBrowser() {
     { width: 1536, height: 864 }
   ];
 
-
   const resolution = commonResolutions[Math.floor(Math.random() * commonResolutions.length)];
 
+
+  const userDataDir = path.join(os.tmpdir(), 'puppeteer_user_data_dir');
+
+  try {
+    await fs.mkdir(userDataDir, { recursive: true });
+  } catch (error) {
+    console.error('Error creating user data directory:', error);
+  }
   return await puppeteer.connect({
     browserURL: "http://localhost:9222",
     defaultViewport: resolution,
@@ -114,16 +161,105 @@ async function connectToBrowser() {
 
 async function setupPage(browser) {
   const page = await browser.newPage();
+
+
+  const userAgents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'
+  ];
+
+  const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+  await page.setUserAgent(userAgent);
+
   await page.setJavaScriptEnabled(true);
   page.setDefaultNavigationTimeout(60000);
   page.setDefaultTimeout(60000);
 
-
   const cursor = createCursor(page);
   page.cursor = cursor;
 
+
+  await page.evaluateOnNewDocument(() => {
+
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => false,
+    });
+
+
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['en-US', 'en'],
+    });
+
+
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => {
+        return [1, 2, 3, 4, 5];
+      },
+    });
+  });
+
   return page;
 }
+
+async function loginToLinkedIn(page) {
+  console.log("Starting LinkedIn login process...");
+  const email = process.env.LINKEDIN_EMAIL;
+  const password = process.env.LINKEDIN_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error("LinkedIn credentials not found in environment variables");
+  }
+
+  try {
+    if (page.url() !== 'https://www.linkedin.com/in/') {
+      return true;
+    }
+    await page.goto('https://www.linkedin.com/login', {
+      waitUntil: 'networkidle2',
+      timeout: 60000
+    });
+
+
+    const signInOtherAccountSelector = 'a.btn__tertiary--medium[data-cie-control-urn="sign_in_with_another_account"]';
+    const signInOtherAccountExists = await page.$(signInOtherAccountSelector) !== null;
+
+    if (signInOtherAccountExists) {
+      console.log("Found 'Sign in with another account' option, clicking it...");
+      await page.waitForSelector(signInOtherAccountSelector, { visible: true, timeout: 10000 });
+      await randomDelay(800, 1500);
+      await page.click(signInOtherAccountSelector);
+    }
+
+
+    await page.waitForSelector('#username', { visible: true, timeout: 10000 });
+    await page.waitForSelector('#password', { visible: true, timeout: 10000 });
+
+    await randomDelay(1000, 2000);
+    await humanTyping(page, '#username', email);
+    await randomDelay(800, 1500);
+    await humanTyping(page, '#password', password);
+    await randomDelay(1000, 2000);
+
+
+    const loginButtonSelector = 'button[type="submit"]';
+    await page.waitForSelector(loginButtonSelector, { visible: true, timeout: 10000 });
+
+    await randomDelay(300, 800);
+    await Promise.all([
+      page.click(loginButtonSelector),
+
+    ]);
+
+    console.log("Login successful");
+    return true;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw new Error(`LinkedIn login failed: ${error.message}`);
+  }
+}
+
 
 async function navigateToProfile(page, url) {
 
@@ -325,7 +461,7 @@ async function clickShowAllPostsButton(page) {
     await buttonHandle.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-  
+
     await buttonHandle.evaluate(el => el.click());
     await new Promise(resolve => setTimeout(resolve, 2000));
     console.log("Clicked 'Show all posts' button");
@@ -446,11 +582,20 @@ export async function POST(request) {
       );
     }
 
-    browser = await connectToBrowser();
+
+    browser = await launchBrowser();
     const page = await setupPage(browser);
 
     try {
+
+      await loginToLinkedIn(page);
+
+
+      await randomDelay(2000, 5000);
+
+
       await navigateToProfile(page, url);
+
 
       const scrapeOrder = Math.random() > 0.5;
 
@@ -503,12 +648,6 @@ export async function POST(request) {
       }
 
       return NextResponse.json({
-        name,
-        headline: headline || "No headline available",
-        about: about || null,
-        experience: experience || null,
-        education: education || null,
-        post: post ? post.text : null,
         connectionMessage,
         postComment,
       });
@@ -535,13 +674,21 @@ export async function POST(request) {
     } finally {
       if (browser) {
         try {
-          // await browser.close();
+          await browser.close();
         } catch (closeError) {
           console.error("Error closing browser:", closeError);
         }
       }
     }
   } catch (error) {
+
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
+    }
     return NextResponse.json(
       {
         type: 'system_error',

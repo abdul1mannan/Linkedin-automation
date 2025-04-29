@@ -40,7 +40,7 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-center">LinkedIn Profile Scraper</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center">LinkedIn Message Generator</h1>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -63,7 +63,7 @@ export default function Home() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Searching...' : 'Get Profile Info'}
+            {loading ? 'Generating...' : 'Generate Messages'}
           </button>
         </form>
 
@@ -85,67 +85,20 @@ export default function Home() {
         )}
 
         {profileData && (
-          <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-black">Profile Information</h2>
-            <div className="space-y-3">
-              <div className="border-b pb-2">
-                <p className="font-medium text-lg text-black">{profileData.name}</p>
-                <p className="text-gray-600 mt-1">{profileData.headline}</p>
+          <div className="mt-8 space-y-4">
+            {profileData.connectionMessage && (
+              <div className="p-6 bg-white rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-4 text-black">Connection Request</h2>
+                <p className="text-gray-800 whitespace-pre-line">{profileData.connectionMessage}</p>
               </div>
-              {profileData.about && (
-                <div className="mt-4">
-                  <h3 className="font-semibold text-md mb-1 text-black">About</h3>
-                  <p className="text-gray-800 whitespace-pre-line">{profileData.about}</p>
-                </div>
-              )}
-              {profileData.experience && profileData.experience.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-semibold text-md mb-1">Experience</h3>
-                  <ul className="space-y-2">
-                    {profileData.experience.map((exp, idx) => (
-                      <li key={idx} className="border-b pb-2">
-                        <p className="font-medium">{exp.title}</p>
-                        {exp.company && <p className="text-gray-700">{exp.company}</p>}
-                        {exp.date && <p className="text-gray-500 text-sm">{exp.date}</p>}
-                        {exp.location && <p className="text-gray-400 text-xs">{exp.location}</p>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {profileData.education && profileData.education.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-semibold text-md mb-1">Education</h3>
-                  <ul className="space-y-2">
-                    {profileData.education.map((edu, idx) => (
-                      <li key={idx} className="border-b pb-2">
-                        <p className="font-medium">{edu.institution}</p>
-                        {edu.degree && <p className="text-gray-700">{edu.degree}</p>}
-                        {edu.details && <p className="text-gray-500 text-sm">{edu.details}</p>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {profileData.post && (
-                <div className="mt-4">
-                  <h3 className="font-semibold text-md mb-1">First Original Post</h3>
-                  <p className="text-gray-800 whitespace-pre-line">{profileData.post}</p>
-                </div>
-              )}
-              {profileData.connectionMessage && (
-                <div className="mt-8 p-4 bg-blue-50 rounded-md">
-                  <h3 className="font-semibold text-md mb-1 text-black">Generated Connection Message</h3>
-                  <p className="text-blue-900 whitespace-pre-line">{profileData.connectionMessage}</p>
-                </div>
-              )}
-              {profileData.postComment && (
-                <div className="mt-4 p-4 bg-green-50 rounded-md">
-                  <h3 className="font-semibold text-md mb-1 text-black">Generated Comment for Recent Post</h3>
-                  <p className="text-green-900 whitespace-pre-line">{profileData.postComment}</p>
-                </div>
-              )}
-            </div>
+            )}
+            
+            {profileData.postComment && (
+              <div className="p-6 bg-white rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-4 text-black">Post Comment</h2>
+                <p className="text-gray-800 whitespace-pre-line">{profileData.postComment}</p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -13,11 +13,11 @@ puppeteer.use(stealth);
 
 
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
-puppeteer.use(
-  BlockResourcesPlugin({
-    blockedTypes: new Set(["image", "stylesheet", "font"]),
-  })
-);
+// puppeteer.use(
+//   BlockResourcesPlugin({
+//     blockedTypes: new Set(["image", "stylesheet", "font"]),
+//   })
+// );
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -102,7 +102,7 @@ async function connectToBrowser() {
     { width: 1536, height: 864 }
   ];
 
- 
+
   const resolution = commonResolutions[Math.floor(Math.random() * commonResolutions.length)];
 
   return await puppeteer.connect({
@@ -118,7 +118,7 @@ async function setupPage(browser) {
   page.setDefaultNavigationTimeout(60000);
   page.setDefaultTimeout(60000);
 
-  
+
   const cursor = createCursor(page);
   page.cursor = cursor;
 
@@ -126,12 +126,12 @@ async function setupPage(browser) {
 }
 
 async function navigateToProfile(page, url) {
- 
+
   await randomDelay(1000, 3000);
 
   const response = await page.goto(url, { timeout: 60000, waitUntil: 'domcontentloaded' });
 
-  
+
   await randomDelay(2000, 4000);
 
   const is404Page = await page.evaluate(() => {
@@ -155,7 +155,7 @@ async function navigateToProfile(page, url) {
 async function scrapeProfileName(page) {
   try {
     console.log("Scrapping Profile Name...");
-    
+
     await naturalScroll(page, 100, { speed: 'medium' });
 
     const nameLocator = page.locator('h1', { visible: true });
@@ -301,34 +301,41 @@ async function clickShowAllPostsButton(page) {
 
     await naturalScroll(page, 1200, { speed: 'medium' });
     await randomDelay(1000, 2500);
+    await page.waitForFunction(() => {
+      return Array.from(document.querySelectorAll('a')).some(a => {
+        const span = a.querySelector('span.artdeco-button__text');
+        return span && span.textContent.trim() === 'Show all posts';
+      });
+    }, { timeout: 10000 });
 
-    const button = await page.waitForSelector('footer a span.artdeco-button__text', {
-      visible: true,
-      timeout: 15000,
-      text: 'Show all posts'
+
+    const buttonHandle = await page.evaluateHandle(() => {
+      return Array.from(document.querySelectorAll('a')).find(a => {
+        const span = a.querySelector('span.artdeco-button__text');
+        return span && span.textContent.trim() === 'Show all posts';
+      });
     });
 
-    if (!button) {
-      throw new Error("'Show all posts' button not found");
-    }
-
-    await page.cursor.move('footer a span.artdeco-button__text');
-    await randomDelay(500, 1200);
-
-    await page.click('footer a span.artdeco-button__text');
-
-    await randomDelay(3000, 5000);
-
-    return true;
-  } catch (error) {
-    if (error.message.includes("'Show all posts' button not found")) {
-      console.log("'Show all posts' button not found");
+    if (!buttonHandle) {
+      console.log("Could not find 'Show all posts' button");
       return false;
     }
-    console.error("Error clicking button:", error.message);
+
+    await naturalScroll(page, 1200, { speed: 'medium' });
+    await buttonHandle.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+  
+    await buttonHandle.evaluate(el => el.click());
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log("Clicked 'Show all posts' button");
+    return true;
+  } catch (error) {
+    console.error("Error clicking 'Show all posts' button:", error);
     return false;
   }
 }
+
 
 async function scrapeFirstOriginalPost(page) {
   try {
@@ -361,6 +368,7 @@ async function scrapeFirstOriginalPost(page) {
     return null;
   }
 }
+
 
 async function generateConnectionMessage(profileData) {
   const prompt = `You are a professional LinkedIn user. Write a short, friendly, and personalized connection request message for the following profile:\n\nName: ${profileData.name

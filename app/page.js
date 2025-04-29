@@ -1,103 +1,154 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [error, setError] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setProfileData(null);
+
+    try {
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch profile data');
+      }
+
+      setProfileData(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-center">LinkedIn Profile Scraper</h1>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
+              LinkedIn Profile URL
+            </label>
+            <input
+              type="url"
+              id="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.linkedin.com/in/username"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            {loading ? 'Searching...' : 'Get Profile Info'}
+          </button>
+        </form>
+
+        {error && (
+          <div className="mt-4 p-4 rounded-md bg-red-50 border border-red-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {error}
+                </h3>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {profileData && (
+          <div className="mt-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-black">Profile Information</h2>
+            <div className="space-y-3">
+              <div className="border-b pb-2">
+                <p className="font-medium text-lg text-black">{profileData.name}</p>
+                <p className="text-gray-600 mt-1">{profileData.headline}</p>
+              </div>
+              {profileData.about && (
+                <div className="mt-4">
+                  <h3 className="font-semibold text-md mb-1 text-black">About</h3>
+                  <p className="text-gray-800 whitespace-pre-line">{profileData.about}</p>
+                </div>
+              )}
+              {profileData.experience && profileData.experience.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold text-md mb-1">Experience</h3>
+                  <ul className="space-y-2">
+                    {profileData.experience.map((exp, idx) => (
+                      <li key={idx} className="border-b pb-2">
+                        <p className="font-medium">{exp.title}</p>
+                        {exp.company && <p className="text-gray-700">{exp.company}</p>}
+                        {exp.date && <p className="text-gray-500 text-sm">{exp.date}</p>}
+                        {exp.location && <p className="text-gray-400 text-xs">{exp.location}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {profileData.education && profileData.education.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="font-semibold text-md mb-1">Education</h3>
+                  <ul className="space-y-2">
+                    {profileData.education.map((edu, idx) => (
+                      <li key={idx} className="border-b pb-2">
+                        <p className="font-medium">{edu.institution}</p>
+                        {edu.degree && <p className="text-gray-700">{edu.degree}</p>}
+                        {edu.details && <p className="text-gray-500 text-sm">{edu.details}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {profileData.post && (
+                <div className="mt-4">
+                  <h3 className="font-semibold text-md mb-1">First Original Post</h3>
+                  <p className="text-gray-800 whitespace-pre-line">{profileData.post}</p>
+                </div>
+              )}
+              {profileData.connectionMessage && (
+                <div className="mt-8 p-4 bg-blue-50 rounded-md">
+                  <h3 className="font-semibold text-md mb-1 text-black">Generated Connection Message</h3>
+                  <p className="text-blue-900 whitespace-pre-line">{profileData.connectionMessage}</p>
+                </div>
+              )}
+              {profileData.postComment && (
+                <div className="mt-4 p-4 bg-green-50 rounded-md">
+                  <h3 className="font-semibold text-md mb-1 text-black">Generated Comment for Recent Post</h3>
+                  <p className="text-green-900 whitespace-pre-line">{profileData.postComment}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
-}
+} 

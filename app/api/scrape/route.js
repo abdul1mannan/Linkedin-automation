@@ -114,7 +114,7 @@ async function launchBrowser() {
   }
 
   return await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

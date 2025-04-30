@@ -41,7 +41,7 @@ export default function Home() {
     <main className="min-h-screen p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-center">LinkedIn Message Generator</h1>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
@@ -57,7 +57,7 @@ export default function Home() {
               required
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -92,7 +92,7 @@ export default function Home() {
                 <p className="text-gray-800 whitespace-pre-line">{profileData.connectionMessage}</p>
               </div>
             )}
-            
+
             {profileData.postComment && (
               <div className="p-6 bg-white rounded-lg shadow-md">
                 <h2 className="text-xl font-semibold mb-4 text-black">Post Comment</h2>

@@ -105,13 +105,6 @@ async function launchBrowser() {
   const resolution = commonResolutions[Math.floor(Math.random() * commonResolutions.length)];
 
 
-  const userDataDir = path.join(os.tmpdir(), 'puppeteer_user_data_dir');
-
-  try {
-    await fs.mkdir(userDataDir, { recursive: true });
-  } catch (error) {
-    console.error('Error creating user data directory:', error);
-  }
 
   return await puppeteer.launch({
     headless: false,
@@ -126,7 +119,6 @@ async function launchBrowser() {
       '--disable-infobars',
       '--disable-blink-features=AutomationControlled',
     ],
-    userDataDir: userDataDir,
     defaultViewport: resolution,
     ignoreHTTPSErrors: true,
     ignoreDefaultArgs: ['--enable-automation'],
